@@ -1,4 +1,6 @@
-//client.c
+// 학번: 19011586
+// 이름: 정욱현
+//multiple-client.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,12 +16,16 @@
 
 int main(int argc, char *argv[])
 {
-    int result;
-    int firstNumber, secondNumber, identifier; //#################################3
+    int result; // 결과 값을 저장할 변수 선언
+    int firstNumber, secondNumber, identifier; // 연산에 사용될 변수 2개, 식별에 사용될 변수 1개를 선언
     int clientFd, len; // 클라이언트 소켓 파일 디스크립터 clientFd 길이 len 변수 선언
     struct sockaddr_in client_addr; // 소켓 주소 구조체 선언
-    char sendData[BUF_SIZE]; // 전송할 데이터 배열을 선언합니다.
-    char recvData[BUF_SIZE];
+    char sendData[BUF_SIZE]; // 전송할 데이터 배열을 선언
+    char recvData[BUF_SIZE]; // 수신할 데이터 배열을 선언
+
+    // 버퍼 초기화
+    memset(recvData, 0, BUF_SIZE);
+    memset(sendData, 0, BUF_SIZE);
     
     // 소켓을 생성합니다.
     if((clientFd = socket(PF_INET, SOCK_STREAM, 0)) == -1)
@@ -44,33 +50,31 @@ int main(int argc, char *argv[])
         close(clientFd);
         return -1;
     }
-
+    // 클라이언트로부터 값을 2개 입력받습니다.
     printf("Enter Number to send: ");
     scanf("%d %d", &firstNumber, &secondNumber);
-
-    // 사용자로부터 메시지를 입력받습니다.
-    if(strcmp(argv[0], "./multiple-client") == 0)
-    {
-        identifier = 1;
+    // client의 실행 파일 이름을 통해서 client의 식별자를 선정합니다.
+    if(strcmp(argv[0], "./multiple-client") == 0) // 곱 연산 클라이언트의 경우 identifier는 1입니다.
+    {   
+        identifier = 1; 
     }
-    else{
+    else{ // 합 연산 클라이언트의 경우 identifier는 0입니다.
         identifier = 0;
     }
-    sprintf(sendData, "Send Number is %d %d %d\n", firstNumber, secondNumber, identifier);
+    sprintf(sendData, "Send Number is %d %d %d\n", firstNumber, secondNumber, identifier); // 입력 받은 데이터를 포함한 문자열을 저장합니다.
     
-    // 입력받은 메시지를 서버에 전송합니다.
-    send(clientFd, sendData, strlen(sendData), 0);
+    send(clientFd, sendData, strlen(sendData), 0); // 입력받은 메시지를 서버에 전송합니다.
     
-    recv(clientFd, recvData, BUF_SIZE, 0);
-    if(identifier == 1)
+    recv(clientFd, recvData, BUF_SIZE, 0); // 서버로부터 데이터를 전송 받습니다.
+    if(identifier == 1) // 식별자가 1이라면 곱 연산의 결과물을 저장합니다.
     {
         sscanf(recvData, "Multiple Result is %d", &result);
     }
-    else
+    else // 식별자가 0이라면 합 연산의 결과물을 저장합니다.
     {
         sscanf(recvData, "Addition Result is %d", &result);
     }
-    printf("%s\n",recvData);
+    printf("%s\n",recvData); // 서버로 부터 전달 받은 문자열을 출력합니다.
     
     // 소켓을 닫습니다.
     close(clientFd);

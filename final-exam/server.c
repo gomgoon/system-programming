@@ -1,3 +1,5 @@
+// 학번: 19011586
+// 이름: 정욱현
 //server.c
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,17 +19,19 @@ void *thread_addition(void *arg);
 
 int main(int argc, char *argv[])
 {
-    char client[20];
+    char client[20]; // 클라이언트의 이름을 저장할 문자형 배열 선언
     char buf[BUF_LEN]; // 메시지를 저장할 버퍼를 선언합니다.
     char ipAddress[20]; // 클라이언트의 ipAddress를 저장할 배열을 선언합니다.
     struct sockaddr_in server_addr, client_addr; // 서버와 클라이언트의 소켓 주소 구조체를 선언합니다.
     
     int serverFd, clientFd; // 서버와 클라이언트의 소켓 파일 디스크립터를 선언합니다.
     int len, msgSize, result; // 길이와 msg의 크기를 저장할 변수를 선언합니다.
-    int *numArray;
-    void *thread_result;
-    pthread_t tid;
+    int *numArray; // 입력받은 수를 저장할 포인터 선언
+    void *thread_result; // 쓰레드 실행 결과물을 저장할 쓰레드 선언
+    pthread_t tid; // 쓰레드 선언
 
+    // 버퍼 초기화
+    memset(buf, 0, BUF_LEN);
 
     // 실행 시 인자를 체크하여 포트 번호를 입력받았는지 확인합니다.
     if(argc != 2)
@@ -86,8 +90,11 @@ int main(int argc, char *argv[])
 
         // 클라이언트의 IP 주소를 출력합니다.
         inet_ntop(AF_INET, &client_addr.sin_addr.s_addr, ipAddress, sizeof(ipAddress));
-        printf("Server: %s client connect.\n", ipAddress);
+        printf("%s client 연결 되었습니다.\n", ipAddress);
         
+        // 버퍼 초기화
+        memset(buf, 0, BUF_LEN);
+
         // 클라이언트로부터 메시지를 받습니다.
         if((msgSize = recv(clientFd, buf, BUF_LEN - 1, 0)) == -1)
         {
@@ -96,44 +103,45 @@ int main(int argc, char *argv[])
             exit(0);
         }
 
-        buf[msgSize] = '\0';
+        buf[msgSize] = '\0'; // 입력받은 값 뒤에 \0를 저장하여 문자열 종료 선언
 
-        numArray = (int*)malloc(3 * sizeof(int));
-        if(sscanf(buf, "Send Number is %d %d %d", &numArray[0], &numArray[1], &numArray[2]) != 3) {
+        numArray = (int*)malloc(3 * sizeof(int)); // 입력 받을 int값을 저장할 메모리 선언
+        if(sscanf(buf, "Send Number is %d %d %d", &numArray[0], &numArray[1], &numArray[2]) != 3) { //numArray에 값을 3개 저장. 3개가 아니라면 제어문 실행
             printf("%s\n",buf);
             printf("Invalid data format received.\n");
             free(numArray);
             continue; // 올바른 데이터 형식이 아니므로, 다음 연결 대기로 넘어갑니다.
         }
-        printf("received data is %d %d\n",numArray[0], numArray[1]);
-        if(numArray[2] == 1)
+        printf("received data is %d %d\n",numArray[0], numArray[1]); // 입력받은 데이터 출력
+        
+        if(numArray[2] == 1) // 클라이언트 판단 (identifier로 사용되는 numArray[2]가 1이면 multiple, 아니라면 addition)
             strcpy(client, "multiple client");
         else
             strcpy(client, "addition client");
         
         if(numArray[2] == 1)
         {
-            pthread_create(&tid, NULL, thread_multiple, numArray); // 쓰레드 생성
-            pthread_join(tid, &thread_result);
+            pthread_create(&tid, NULL, thread_multiple, numArray); // 쓰레드 생성 - 스레드에서 흐름 실행
+            pthread_join(tid, &thread_result); // 쓰레드 종료 대기
             result = *((int *)thread_result); // void *를 int *로 캐스팅한 후 값을 참조
             free(thread_result); // 쓰레드 함수에서 할당한 메모리 해제
 
-            sprintf(buf, "Multiple Result is %d", result);
+            sprintf(buf, "Multiple Result is %d", result); // 곱 연산 결과 출력
         }
         else
         {
-            pthread_create(&tid, NULL, thread_addition, numArray); // 쓰레드 생성
-            pthread_join(tid, &thread_result);
+            pthread_create(&tid, NULL, thread_addition, numArray); // 쓰레드 생성 - 스레드에서 흐름 실행
+            pthread_join(tid, &thread_result); // 쓰레드 종료 대기
             result = *((int *)thread_result); // void *를 int *로 캐스팅한 후 값을 참조
             free(thread_result); // 쓰레드 함수에서 할당한 메모리 해제
 
             sprintf(buf, "Addition Result is %d", result);
         }
         send(clientFd, (char *)buf, msgSize, 0); // 받은 메시지를 클라이언트에게 다시 보냅니다.
-        printf("Calculation result is sented!\n");
+        printf("Calculation result is sented!\n"); // 합 연산 결과 출력
 
         close(clientFd); // 클라이언트의 소켓을 닫습니다.
-        printf("Server: %s client closed.\n", ipAddress);
+        printf("%s client 연결 종료되었습니다.\n", ipAddress);
     }
 
     close(serverFd); // 서버의 소켓을 닫습니다.
@@ -141,6 +149,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+// server 실행 출력문 함수
 void notice(){
     printf("=========================================\n");
     printf("=========================================\n");
@@ -150,22 +159,20 @@ void notice(){
     printf("=========================================\n");
 }
 
+// 곱하기 연산을 수행하는 쓰레드
 void *thread_multiple(void *arg){
-    printf("Thread start!\n");
-    int *numArray = (int *)arg;
-    int *result = malloc(sizeof(int));
-    *result = numArray[0] * numArray[1];
-    free(numArray);
-    printf("Thread end! return val is %d\n", *result);
-    return result;
+    int *numArray = (int *)arg;             // 수를 저장하는 int형 포인터 배열 선언
+    int *result = malloc(sizeof(int));      // 값을 반환할 return 포인터 할당
+    *result = numArray[0] * numArray[1];    // 입력 받은 두 값의 곱을 result에 저장
+    free(numArray);                         // numArray 주소의 할당된 메모리 할당 해제
+    return result;                          // result 반환
 }
 
+// 더하기 연산을 수행하는 쓰레드
 void *thread_addition(void *arg){
-    int *numArray = (int *)arg;
-    int *result = malloc(sizeof(int));
-    
-    *result = numArray[0] + numArray[1];
-    free(numArray);
-
-    return result;
+    int *numArray = (int *)arg;             // 수를 저장하는 int형 포인터 배열 선언
+    int *result = malloc(sizeof(int));      // 값을 반환할 return 포인터 할당
+    *result = numArray[0] + numArray[1];    // 입력 받은 두 값의 합을 result에 저장
+    free(numArray);                         // numArray 주소의 할당된 메모리 할당 해제
+    return result;                          // result 반환
 }
