@@ -14,9 +14,12 @@
 
 int main(int argc, char *argv[])
 {
+    int result;
+    int firstNumber, secondNumber, identifier; //#################################3
     int clientFd, len; // 클라이언트 소켓 파일 디스크립터 clientFd 길이 len 변수 선언
     struct sockaddr_in client_addr; // 소켓 주소 구조체 선언
     char sendData[BUF_SIZE]; // 전송할 데이터 배열을 선언합니다.
+    char recvData[BUF_SIZE];
     
     // 소켓을 생성합니다.
     if((clientFd = socket(PF_INET, SOCK_STREAM, 0)) == -1)
@@ -42,11 +45,33 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    printf("Enter Number to send: ");
+    scanf("%d %d", &firstNumber, &secondNumber);
+
     // 사용자로부터 메시지를 입력받습니다.
-    printf("Enter message to send: ");
-    fgets(sendData, BUF_SIZE, stdin);
+    if(strcmp(argv[0], "./multiple-client") == 0)
+    {
+        identifier = 1;
+    }
+    else{
+        identifier = 0;
+    }
+    sprintf(sendData, "Send Number is %d %d %d\n", firstNumber, secondNumber, identifier);
+    
     // 입력받은 메시지를 서버에 전송합니다.
     send(clientFd, sendData, strlen(sendData), 0);
+    
+    recv(clientFd, recvData, BUF_SIZE, 0);
+    if(identifier == 1)
+    {
+        sscanf(recvData, "Multiple Result is %d", &result);
+    }
+    else
+    {
+        sscanf(recvData, "Addition Result is %d", &result);
+    }
+    printf("%s\n",recvData);
+    
     // 소켓을 닫습니다.
     close(clientFd);
 
